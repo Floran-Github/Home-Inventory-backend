@@ -44,6 +44,7 @@ INSTALLED_APPS = [
 
     'inventoryAPI.apps.InventoryapiConfig',
     'authAPI.apps.AuthapiConfig',
+    'transactionAPI.apps.TransactionapiConfig',
 ]
 
 REST_FRAMEWORK = {
