@@ -1,4 +1,3 @@
-from pyexpat import model
 from django.db import models
 from django.contrib.auth.models import User
 
@@ -37,7 +36,7 @@ class Product(models.Model):
 
 class ProductPriceHistory(models.Model):
     prdAssociated = models.ForeignKey(Product,on_delete=models.CASCADE)
-    prdPrice = models.FloatField()
+    prdPrice = models.FloatField() 
     date = models.DateField(auto_now=True)
 
     def __str__(self) -> str:
