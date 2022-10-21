@@ -56,3 +56,21 @@ class UserTransactionsDetailViewAPI(APIView):
                 return Response({'message':str(e1)},status=status.HTTP_400_BAD_REQUEST)
         except Exception as e:
             return Response({'message':e},status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+class TransactionManualCreateView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self,request,*args,**kwargs):
+        try:
+            transData = request.data['transData']
+        except Exception as e:
+            return Response({'message':str(e)},status=status.HTTP_400_BAD_REQUEST)
+
+class TrancsactionOCRCreateView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+    def post(self,request,*arg,**kwargs):
+        data = request.data['scannedData']
+
+        print(data)
+
+        return Response({'message':'data'},status=status.HTTP_200_OK)
