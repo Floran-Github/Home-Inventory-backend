@@ -18,14 +18,11 @@ class InventoryAPI(APIView):
 
             serial = inventorySerializer(query,many=True)
 
-            context = {
-                "inventories" : serial.data
-            }
-            return Response(context,status=status.HTTP_200_OK)
+           
+            return Response(serial.data,status=status.HTTP_200_OK)
         except Exception as e:
             print(e)
             return Response({'message':'Something went wrong'},status=status.HTTP_404_NOT_FOUND)
-
 
 class InventoryProductAPI(APIView):
     permission_classes = [permissions.IsAuthenticated]
@@ -105,16 +102,22 @@ class InventoryProductAPI(APIView):
 
             for i in products:
                 pd = Product.objects.filter(pk=i.prodAssociated.pk)
-                pdprice = ProductPriceHistory.objects.filter(prdAssociated=pd[0].pk)             
+                pdprice = ProductPriceHistory.objects.filter(prdAssociated=pd[0].pk)   
+                prdQtyModel = InventoryProduct.objects.get(invAssociated=invCheck,prodAssociated=pd[0].pk)           
                 pd = pd.values()[0]
                 pd['priceHistory'] = pdprice.values()
+                pd['prdQty'] = prdQtyModel.prdQty
+                pd['product_weight_per_quantity'] = prdQtyModel.product_weight_per_quantity
+                pd['totalquantity'] = prdQtyModel.totalquantity
+                
                 prdList.append(pd)
-
+            
             context = {
-                'products': prdList
+                'invdetail':invCheck,
+                'prdList':prdList
             }
 
-            return Response(context,status=status.HTTP_200_OK)
+            return Response(prdList,status=status.HTTP_200_OK)
 
             
         except Exception as e:
