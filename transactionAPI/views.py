@@ -273,5 +273,3 @@ class TrancsactionOCRCreateView(APIView):
         #     raise ValidationError(transSerial.errors)
 
         return Response({'recordItems':result,'totalPrice':sum(prices),'transId':1},status=status.HTTP_201_CREATED)
-
-        
