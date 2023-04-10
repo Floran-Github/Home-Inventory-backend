@@ -29,6 +29,7 @@ class InventoryTransaction(APIView):
 
         transData = TransactionRecord.objects.filter(invAssociated=pk)
         transItem = TransactionItem.objects.filter(transactionAssociated=transData.pk)
+        inv = Inventory.objects.get(pk=pk)
         data = []
 
         for i in transItem:
@@ -100,13 +101,17 @@ class TransactionManualCreateView(APIView):
         except Exception as e:
             return Response({'message':str(e)},status=status.HTTP_400_BAD_REQUEST)
 
+# Chat gpt context
+# Your are chef that gives atleast 10 recipes if possible with step by step process. ingredients, and nutrition value. => system
+# Can you provide me recipes for food item I can make with potato, India Gate Basmati Rice, aashirvaad atta => user
+# Todo => Filter the data, break it down into dictionary and send it flutter
+
 class TrancsactionOCRCreateView(APIView):
     permission_classes = [permissions.IsAuthenticated]
     def post(self,request,*arg,**kwargs):
         invCheck = Inventory.objects.filter(Q(user_associated=request.user.id) | Q(sharedTo__id=request.user.id),pk=request.data['invAssociated'])
         if len(invCheck) == 0:
             return Response({'msgs':'No inventory found'},status=status.HTTP_400_BAD_REQUEST)
-
         data = request.data['scannedData']
         market = request.data['market']
         productData = []
