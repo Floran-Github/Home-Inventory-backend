@@ -33,9 +33,9 @@ class InventoryProductAPI(APIView):
             prdName = request.data['prdName']
             prdData = Product.objects.filter(prdName=prdName)
 
-            if prdData:
+            if not prdData:
                 return Response(
-                    {'message':'bhai idhar aa gai'},status=status.HTTP_200_OK
+                    {'message':'error'},status=status.HTTP_400_BAD_REQUEST
                 )
             else:
                 prdDict = {
@@ -93,17 +93,23 @@ class InventoryProductAPI(APIView):
             return Response({'message':'something went wrong'},status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
     def get(self,request,pk=None):
-      
+        
+        print(pk)
         try:
-            invCheck = Inventory.objects.filter(Q(user_associated=request.user.id) | Q(sharedTo__id=request.user.id)).get(pk=pk)
-            products = InventoryProduct.objects.filter(invAssociated=invCheck.pk)
+            invCheck = Inventory.objects.filter(Q(user_associated=request.user.id) | Q(sharedTo__id=request.user.id), pk=pk)
+            
+            if not invCheck:
+                return Response({'message':'Inventory not found'},status=status.HTTP_404_NOT_FOUND)
+
+            
+            products = InventoryProduct.objects.filter(invAssociated=invCheck[0].pk)
 
             prdList = []
 
             for i in products:
                 pd = Product.objects.filter(pk=i.prodAssociated.pk)
                 pdprice = ProductPriceHistory.objects.filter(prdAssociated=pd[0].pk)   
-                prdQtyModel = InventoryProduct.objects.get(invAssociated=invCheck,prodAssociated=pd[0].pk)           
+                prdQtyModel = InventoryProduct.objects.get(invAssociated=invCheck[0],prodAssociated=pd[0].pk)           
                 pd = pd.values()[0]
                 pd['priceHistory'] = pdprice.values()
                 pd['prdQty'] = prdQtyModel.prdQty
@@ -112,16 +118,17 @@ class InventoryProductAPI(APIView):
                 
                 prdList.append(pd)
             
+            invSerialize = inventorySerializer(invCheck,many=True)
             context = {
-                'invdetail':invCheck,
+                'invdetail':invSerialize.data[0],
                 'prdList':prdList
             }
 
-            return Response(prdList,status=status.HTTP_200_OK)
+            return Response(context,status=status.HTTP_200_OK)
 
             
         except Exception as e:
             print(e)
-            return Response({'message':'Inventory not found'},status=status.HTTP_404_NOT_FOUND)
+            return Response({'error':str(e)},status=status.HTTP_404_NOT_FOUND)
 
        

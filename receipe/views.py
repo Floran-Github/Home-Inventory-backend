@@ -8,7 +8,7 @@ from django.db.models import Q
 from inventoryAPI.models import *
 
 openai.organization = "org-HrXKRQTivn0etgp22bq3pYJ7"
-openai.api_key = "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"
+openai.api_key = "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"
 
 class ReceipeSuggestionListAPI(APIView):
     permission_classes = [permissions.IsAuthenticated]
@@ -28,13 +28,10 @@ class ReceipeSuggestionListAPI(APIView):
 
 
         prompt = f"List of Food receipe items in format of 'food name (Cooking time: time required to made food)' that can be made with {prd} along with their cooking time are"
-        # prompt = f"Python List of Food receipe items dictionary with key as 'food name' and 'cooking time' that can be made with {prd} along with their cooking time are"
         response = openai.Completion.create(model="text-davinci-003", prompt=prompt, temperature=1, max_tokens=2048)
 
         msg = response['choices'][0]['text']
-        # print(msg)
         smsg = msg.split('\n')
-        # print(smsg)
         tp = "(Cooking Time: "
         res = []
 

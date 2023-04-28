@@ -8,6 +8,12 @@ class inventorySerializer(ModelSerializer):
         fields = '__all__'
 
 
+    def to_representation(self, instance):
+        rep =  super().to_representation(instance)
+        rep['user_associated'] = instance.user_associated.username
+
+        return rep
+
 class productSerializer(ModelSerializer):
     class Meta:
         model = Product

@@ -13,12 +13,10 @@ class UserTransactionsListViewAPI(APIView):
     
     def get(self,request,format=None):
         try:
-            transData = TransactionRecord.objects.filter(user_associated=request.user).values()
-            context = {
-                
-            }
+            transData = TransactionRecord.objects.filter(user_associated=request.user).select_related('marketAssocaited')[::-1]
+            serialized = TransactionRecordSerializer(transData,many=True)
 
-            return Response(transData,status=status.HTTP_200_OK)
+            return Response(serialized.data,status=status.HTTP_200_OK)
         except Exception as e:
             return Response({'message':e},status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
@@ -26,72 +24,47 @@ class InventoryTransaction(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def get(self,request,pk):
+        
+        # checking if user has access to inv
+        invCheck = Inventory.objects.filter(Q(user_associated=request.user.id) | Q(sharedTo__id=request.user.id),pk=pk)
+        if not invCheck.exists():
+            return Response({"err":"Inventory Not Found"},status=status.HTTP_404_NOT_FOUND)
+        transData = TransactionRecord.objects.filter(invAssociated=pk)[::-1]
+        
+        serialized = TransactionRecordSerializer(transData,many=True)
 
-        transData = TransactionRecord.objects.filter(invAssociated=pk)
-        transItem = TransactionItem.objects.filter(transactionAssociated=transData.pk)
-        inv = Inventory.objects.get(pk=pk)
-        data = []
-
-        for i in transItem:
-            prd = Product.objects.filter(pk=i.prdAssociated.pk).values()[0]
-            invPrd = InventoryProduct.objects.get(invAssociated=inv,prodAssociated=prd['id'])
-            prdPriceHistory = ProductPriceHistory.objects.filter(prdAssociated=prd['id']).values()
-            prd['prdQty'] = invPrd.prdQty
-            prd['product_weight_per_quantity'] = invPrd.product_weight_per_quantity
-            prd['totalquantity'] = invPrd.totalquantity
-            prd['priceHistory'] = prdPriceHistory
-
-            data.append(prd)
-
-        context = {
-            "market": transData.marketAssocaited,
-            "transDate": transData.transDate,
-            "totalAmount": transData.totalAmount,
-            "totalItem": transData.totalItem,
-            "prodcuts": data
-        }
-
-        return Response(context,status=status.HTTP_200_OK)
+        return Response(serialized.data,status=status.HTTP_200_OK)
 
 class UserTransactionsDetailViewAPI(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def get(self,request,pk=None):
+
         try:
-            try:
-                data = []
-                transData = TransactionRecord.objects.get(Q(invAssociated__user_associated=request.user.id) | Q(invAssociated__sharedTo__id=request.user.id),pk=pk)
-                print(transData)
-                itemData = TransactionItem.objects.filter(transactionAssociated=transData)
-                inv = transData.invAssociated
+            transData = TransactionRecord.objects.filter(
+                Q(invAssociated__user_associated=request.user.id) | Q(invAssociated__sharedTo__id=request.user.id),
+                pk=pk)
+            
+            if not transData.exists():
+                return Response({"err":"Invalid Request"}, status=status.HTTP_400_BAD_REQUEST)
 
-                for i in itemData:
-                    prd = Product.objects.filter(pk=i.prdAssociated.pk).values()[0]
-                    invPrd = InventoryProduct.objects.get(invAssociated=inv,prodAssociated=prd['id'])
-                    prdPriceHistory = ProductPriceHistory.objects.filter(prdAssociated=prd['id']).values()
-                    prd['prdQty'] = invPrd.prdQty
-                    prd['product_weight_per_quantity'] = invPrd.product_weight_per_quantity
-                    prd['totalquantity'] = invPrd.totalquantity
-                    prd['priceHistory'] = prdPriceHistory
+            itemData = TransactionItem.objects.filter(transactionAssociated=transData[0].pk)
 
-                    data.append(prd)
-                
-                context = {
-                    'market': transData.marketAssocaited.name,
-                    'transDate':transData.transDate,
-                    'totalAmount':transData.totalAmount,
-                    'totalItem':transData.totalItem,
-                    'products':data
-                }
-                
-                return Response(context,status=status.HTTP_200_OK)
-                
+            transSerial = TransactionRecordSerializer(transData,many=True)
+            itemSerial = TransactionItemSerializer(itemData,many=True)
 
-            except Exception as e1:
-                return Response({'message':str(e1)},status=status.HTTP_400_BAD_REQUEST)
-        except Exception as e:
-            return Response({'message':e},status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            context = {
+                "recordDetail":transSerial.data[0],
+                "prdDetail": itemSerial.data
+            }
+            
+            return Response(context,status=status.HTTP_200_OK)
+            
+        except Exception as e1:
+            return Response({'message':str(e1)},status=status.HTTP_400_BAD_REQUEST)
 
+
+# pending to complete
 class TransactionManualCreateView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
@@ -101,11 +74,7 @@ class TransactionManualCreateView(APIView):
         except Exception as e:
             return Response({'message':str(e)},status=status.HTTP_400_BAD_REQUEST)
 
-# Chat gpt context
-# Your are chef that gives atleast 10 recipes if possible with step by step process. ingredients, and nutrition value. => system
-# Can you provide me recipes for food item I can make with potato, India Gate Basmati Rice, aashirvaad atta => user
-# Todo => Filter the data, break it down into dictionary and send it flutter
-
+# pending to create transaction
 class TrancsactionOCRCreateView(APIView):
     permission_classes = [permissions.IsAuthenticated]
     def post(self,request,*arg,**kwargs):
