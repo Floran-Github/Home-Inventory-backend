@@ -8,7 +8,7 @@ from django.db.models import Q
 from inventoryAPI.models import *
 
 openai.organization = "org-HrXKRQTivn0etgp22bq3pYJ7"
-openai.api_key = "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"
+openai.api_key = "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"
 
 class ReceipeSuggestionListAPI(APIView):
     permission_classes = [permissions.IsAuthenticated]
